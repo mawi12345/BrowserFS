@@ -52,6 +52,23 @@ export default function() {
     });
   });
 
+  // fstat on dir
+  fs.open(existing_dir, 'r', undefined, function(err, fd) {
+    assert.ok(!err, 'open error: '+(err ? err.message : ''));
+    assert.ok(fd);
+
+    fs.fstat(fd, function(err, stats) {
+      if (err) {
+        got_error = true;
+      } else {
+        assert.equal(true, stats.isDirectory(), 'fstat on dir fd isDirectory');
+        assert.ok(stats.mtime instanceof Date);
+        success_count++;
+        fs.close(fd);
+      }
+    });
+  });
+
   if (fs.getRootFS().supportsSynch()) {
     // fstatSync
     fs.open(existing_file, 'r', undefined, function(err, fd) {
@@ -62,6 +79,22 @@ export default function() {
         got_error = true;
       }
       if (stats) {
+        assert.ok(stats.mtime instanceof Date);
+        success_count++;
+      }
+      fs.close(fd);
+    });
+    
+    // fstatSync on dir
+    fs.open(existing_dir, 'r', undefined, function(err, fd) {
+      var stats: any;
+      try {
+        stats = fs.fstatSync(fd);
+      } catch (e) {
+        got_error = true;
+      }
+      if (stats) {
+        assert.equal(true, stats.isDirectory(), 'fstatSync on dir fd isDirectory');
         assert.ok(stats.mtime instanceof Date);
         success_count++;
       }
@@ -87,8 +120,8 @@ export default function() {
   });
 
   process.on('exit', function() {
-    var expected_success = 5;
-    if (fs.getRootFS().supportsSynch()) expected_success++;
+    var expected_success = 6;
+    if (fs.getRootFS().supportsSynch()) expected_success += 2;
     assert.equal(expected_success, success_count);
     assert.equal(false, got_error);
   });

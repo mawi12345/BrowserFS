@@ -5,23 +5,6 @@ import common from '../../../harness/common';
 
 export default function() {
   var rootFS = fs.getRootFS(), hasThrown = false;
-  if (rootFS.supportsSynch()) {
-    try {
-      fs.openSync(common.fixturesDir, 'r');
-    } catch (e) {
-      hasThrown = true;
-      assert.equal(e.code, 'EISDIR');
-    }
-    assert(hasThrown, "Failed invariant: Cannot open() a directory.");
-    hasThrown = false;
-  }
-
-  // Async versions of the above.
-  fs.open(common.fixturesDir, 'r', function(err, fd) {
-    assert(err, "Failed invariant: Cannot open() a directory.");
-    assert.equal(err.code, 'EISDIR');
-  });
-
   if (!rootFS.isReadOnly()) {
     if (rootFS.supportsSynch()) {
       try {

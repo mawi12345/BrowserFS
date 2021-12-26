@@ -115,7 +115,7 @@ export class HTML5FSFile extends PreloadFile<HTML5FS> implements IFile {
   }
 
   public sync(cb: BFSOneArgCallback): void {
-    if (!this.isDirty()) {
+    if (!this.isDirty() || this.statSync().isDirectory()) {
       return cb();
     }
 
@@ -373,7 +373,19 @@ export default class HTML5FS extends BaseFileSystem implements IFileSystem {
         };
         reader.readAsArrayBuffer(file);
       }, error);
-    }, error);
+    }, () => {
+      this.fs.root.getDirectory(p, {
+        create: flags.pathNotExistsAction() === ActionType.CREATE_FILE,
+        exclusive: flags.isExclusive()
+      },
+      (dirEntry: DirectoryEntry) => {
+        const stats = new Stats(FileType.DIRECTORY, 0);
+        // FIXME: unsafe cast DirectoryEntry to FileEntry
+        cb(null, new HTML5FSFile(this, dirEntry as unknown as FileEntry, p, flags, stats, Buffer.from(new ArrayBuffer(0))));
+      },
+      error,
+      );
+    });
   }
 
   public unlink(path: string, cb: BFSOneArgCallback): void {
